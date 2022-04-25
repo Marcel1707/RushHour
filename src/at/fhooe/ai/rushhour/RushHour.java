@@ -36,8 +36,10 @@ public class RushHour {
       System.out.println("=================================================");
       System.out.println("puzzle = " + puzzles[i].getName());
 
-      Heuristic[] heuristics = { // these are the heuristics to be used
-          new ZeroHeuristic(puzzles[i]), new BlockingHeuristic(puzzles[i]), new AdvancedHeuristic(puzzles[i]), };
+      /*Heuristic[] heuristics = { // these are the heuristics to be used
+          new ZeroHeuristic(puzzles[i]), new BlockingHeuristic(puzzles[i]), new AdvancedHeuristic(puzzles[i]), };*/
+
+      Heuristic[] heuristics = { new ZeroHeuristic(puzzles[i]), new BlockingHeuristic(puzzles[i]) };
 
       if (i == 0) {
         num_heuristics = heuristics.length;
