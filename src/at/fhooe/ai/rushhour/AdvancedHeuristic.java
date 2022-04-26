@@ -1,4 +1,10 @@
 package at.fhooe.ai.rushhour;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
  * This is a template for the class corresponding to your original
  * advanced heuristic.  This class is an implementation of the
@@ -14,7 +20,7 @@ public class AdvancedHeuristic implements Heuristic {
     public AdvancedHeuristic(Puzzle puzzle) {
       // TODO
     }
-	
+
     /**
      * This method returns the value of the heuristic function at the
      * given state.
@@ -24,4 +30,23 @@ public class AdvancedHeuristic implements Heuristic {
       return 0;
     }
 
+    private boolean canVehicleEvade(int vehicleIdx, Set<Integer> blockingVehiclesIdx) {
+        int goalCarPosition = puzzle.getFixedPosition(0);
+        List<Integer> blockingVehiclePositions = blockingVehiclesIdx.stream().map(puzzle::getFixedPosition).collect(Collectors.toList());
+
+        int numberOfFreeFields = 0;
+
+        for(int position = 0; position < puzzle.getGridSize(); position++){
+            if(position != goalCarPosition && !blockingVehiclePositions.contains(position)){
+                numberOfFreeFields++;
+
+                if(numberOfFreeFields >= puzzle.getCarSize(vehicleIdx))
+                    return true;
+            }else{
+                numberOfFreeFields = 0;
+            }
+        }
+
+        return false;
+    }
 }

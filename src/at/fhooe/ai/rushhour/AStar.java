@@ -1,5 +1,6 @@
 package at.fhooe.ai.rushhour;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -45,19 +46,22 @@ public class AStar {
     }
 
     private Node search(Puzzle puzzle, Heuristic heuristic) {
-        Map<Node, LocalDateTime> openListInsertions = new HashMap<>();
+        int insertionIdx = 0;
+        Map<Node, Integer> openListInsertions = new HashMap<>();
 
         PriorityQueue<Node> openList = new PriorityQueue<>((o1, o2) -> {
             int cmp = Integer.compare(o1.getDepth() + heuristic.getValue(o1.getState()),
                     o2.getDepth() + heuristic.getValue(o2.getState()));
+
+            /* if the depth is equal, select the most recently added node (LIFO) */
             if (cmp == 0)
-                return openListInsertions.get(o2).compareTo(openListInsertions.get(o1));
+                return Integer.compare(openListInsertions.get(o2), openListInsertions.get(o1));
 
             return cmp;
         });
 
         Set<State> closedList = new HashSet<>();
-        openListInsertions.put(puzzle.getInitNode(), LocalDateTime.now());
+        openListInsertions.put(puzzle.getInitNode(), insertionIdx++);
         openList.add(puzzle.getInitNode());
 
         Heuristic h = new BlockingHeuristic(puzzle);
