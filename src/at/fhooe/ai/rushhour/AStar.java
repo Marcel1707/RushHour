@@ -1,8 +1,7 @@
 package at.fhooe.ai.rushhour;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This is the template for a class that performs A* search on a given rush hour
@@ -21,12 +20,38 @@ public class AStar {
      */
     public State[] path;
 
+    private final Puzzle puzzle;
+
+    private final Heuristic heuristic;
+    private final Map<State, Integer> heuristics = new HashMap<>();
+    private final Map<State, Node> optimalNodeForState = new HashMap<>();
+    private final Map<Node, Integer> openListInsertions = new HashMap<>();
+    private final Set<State> closedList = new HashSet<>();
+    private final PriorityQueue<Node> openList;
+
+
     /**
      * This is the constructor that performs A* search to compute a
      * solution for the given puzzle using the given heuristic.
      */
     public AStar(Puzzle puzzle, Heuristic heuristic) {
-        Node targetNode = search(puzzle, heuristic);
+        this.puzzle = puzzle;
+        this.heuristic = heuristic;
+
+        Comparator<Node> comparator = (o1, o2) -> {
+            int cmp = Integer.compare(o1.getDepth() + heuristics.get(o1.getState()),
+                    o2.getDepth() + heuristics.get(o2.getState()));
+
+            /* if the depth is equal, select the most recently added node (LIFO) */
+            if (cmp == 0)
+                return Integer.compare(openListInsertions.get(o2), openListInsertions.get(o1));
+
+            return cmp;
+        };
+
+        this.openList = new PriorityQueue<>(comparator);
+
+        Node targetNode = search();
 
         if (targetNode == null) return;
 
@@ -45,30 +70,21 @@ public class AStar {
         }
     }
 
-    private Node search(Puzzle puzzle, Heuristic heuristic) {
-        int insertionIdx = 0;
-        Map<Node, Integer> openListInsertions = new HashMap<>();
+    private Node search() {
+        heuristics.clear();
+        openListInsertions.clear();
+        openList.clear();
+        closedList.clear();
+        optimalNodeForState.clear();
 
-        PriorityQueue<Node> openList = new PriorityQueue<>((o1, o2) -> {
-            int cmp = Integer.compare(o1.getDepth() + heuristic.getValue(o1.getState()),
-                    o2.getDepth() + heuristic.getValue(o2.getState()));
+        AtomicInteger insertionIdx = new AtomicInteger(0);
 
-            /* if the depth is equal, select the most recently added node (LIFO) */
-            if (cmp == 0)
-                return Integer.compare(openListInsertions.get(o2), openListInsertions.get(o1));
-
-            return cmp;
-        });
-
-        Set<State> closedList = new HashSet<>();
-        openListInsertions.put(puzzle.getInitNode(), insertionIdx++);
-        openList.add(puzzle.getInitNode());
-
-        Heuristic h = new BlockingHeuristic(puzzle);
-        h.getValue(puzzle.getInitNode().getState());
+        addToOpenList(puzzle.getInitNode(), insertionIdx);
 
         while (!openList.isEmpty()) {
             Node currentNode = openList.poll();
+
+            openList.remove(currentNode);
 
             if (currentNode.getState().isGoal()) {
                 return currentNode;
@@ -85,6 +101,24 @@ public class AStar {
         }
 
         return null;
+    }
+
+    private void addToOpenList(Node node, AtomicInteger insertionIdx) {
+        if (!heuristics.containsKey(node.getState()))
+            heuristics.put(node.getState(), heuristic.getValue(node.getState()));
+
+        Node existingNode = optimalNodeForState.get(node.getState());
+
+        if (existingNode == null || node.getDepth() < existingNode.getDepth()) {
+            optimalNodeForState.put(node.getState(), node);
+            openListInsertions.put(node, insertionIdx.getAndIncrement());
+            openList.add(node);
+
+            if (existingNode != null && node.getDepth() < existingNode.getDepth()) {
+                openList.remove(existingNode);
+                openListInsertions.remove(existingNode);
+            }
+        }
     }
 
 

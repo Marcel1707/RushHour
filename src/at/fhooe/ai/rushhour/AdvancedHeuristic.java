@@ -32,7 +32,7 @@ public class AdvancedHeuristic implements Heuristic {
 
     private boolean canVehicleEvade(int vehicleIdx, Set<Integer> blockingVehiclesIdx) {
         int goalCarPosition = puzzle.getFixedPosition(0);
-        List<Integer> blockingVehiclePositions = blockingVehiclesIdx.stream().map(puzzle::getFixedPosition).collect(Collectors.toList());
+        Set<Integer> blockingVehiclePositions = blockingVehiclesIdx.stream().map(puzzle::getFixedPosition).collect(Collectors.toSet());
 
         int numberOfFreeFields = 0;
 
