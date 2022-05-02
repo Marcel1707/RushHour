@@ -15,11 +15,13 @@ import java.util.stream.Collectors;
  */
 public class AdvancedHeuristic implements Heuristic {
 
+    private final Puzzle puzzle;
+
     /**
      * This is the required constructor, which must be of the given form.
      */
     public AdvancedHeuristic(Puzzle puzzle) {
-      // TODO
+        this.puzzle = puzzle;
     }
 
     /**
@@ -27,81 +29,67 @@ public class AdvancedHeuristic implements Heuristic {
      * given state.
      */
     public int getValue(State state) {
-      // TODO
-      return 0;
-    }
+        if (state.isGoal())
+            return 0;
 
-    private boolean canVehicleEvade(int vehicleIdx, Set<Integer> blockingVehiclesIdx) {
-        int goalCarPosition = puzzle.getFixedPosition(0);
-        Set<Integer> blockingVehiclePositions = blockingVehiclesIdx.stream().map(puzzle::getFixedPosition).collect(Collectors.toSet());
+        /* find vehicles that are blocking the goal car in the front */
+        Set<Integer> mainBlockingVehicles = HeuristicUtils.findBlockingVehicles(state, puzzle, 0, true);
 
-        int numberOfFreeFields = 0;
+        int minExpenseForBlockingVehiclesToEvadeSum = 0;
+        Set<Integer> alreadyConsideredBlockingVehicles = new HashSet<>();
 
-        for(int position = 0; position < puzzle.getGridSize(); position++){
-            if(position != goalCarPosition && !blockingVehiclePositions.contains(position)){
-                numberOfFreeFields++;
+        for (int blockingVehicleIdx : mainBlockingVehicles) {
+            /* find vehicles that are also blocking our blocking vehicles */
+            Set<Integer> blockingVehiclesOfBlockingVehicles = HeuristicUtils.findBlockingVehicles(state, puzzle, blockingVehicleIdx, false);
 
-                if(numberOfFreeFields >= puzzle.getCarSize(vehicleIdx))
-                    return true;
-            }else{
-                numberOfFreeFields = 0;
-            }
+            /* make sure, that when a blocking vehicles blocks multiple vehicles, this vehicle is just considered one time */
+            blockingVehiclesOfBlockingVehicles.removeAll(alreadyConsideredBlockingVehicles);
+
+            /* find the minimum expense for the blocking vehicle to evade to the front or to the back */
+            int minExpenseForBlockingVehicleToEvade = Math.min(
+                    expenseToEvade(blockingVehicleIdx, new ArrayList<>(blockingVehiclesOfBlockingVehicles), alreadyConsideredBlockingVehicles, true), // consider front
+                    expenseToEvade(blockingVehicleIdx, new ArrayList<>(blockingVehiclesOfBlockingVehicles), alreadyConsideredBlockingVehicles, false) // consider back
+            );
+
+            minExpenseForBlockingVehiclesToEvadeSum += minExpenseForBlockingVehicleToEvade;
+
         }
 
-        return false;
+        return mainBlockingVehicles.size() + 1 + minExpenseForBlockingVehiclesToEvadeSum;
     }
 
-    private int minExpenseToEvadeVehicle(int vehicleIdx, Set<Integer> blockingVehiclesIdx, Set<Integer> alreadyConsideredVehicles) {
-
-        return Math.min(expenseToEvadeFront(vehicleIdx, new ArrayList<>(blockingVehiclesIdx), alreadyConsideredVehicles),
-                        expenseToEvadeBack(vehicleIdx, new ArrayList<>(blockingVehiclesIdx), alreadyConsideredVehicles));
-
-    }
-
-    private int expenseToEvadeFront(int vehicleIdx, List<Integer> blockingVehiclesIdx, Set<Integer> alreadyConsideredVehicles) {
-        List<Integer> blockingVehiclePositions = blockingVehiclesIdx.stream().map(puzzle::getFixedPosition).collect(Collectors.toList());
-
+    private int expenseToEvade(int vehicleIdx, List<Integer> blockingVehiclesIdx, Set<Integer> alreadyConsideredVehicles, boolean front) {
         int goalCarPosition = puzzle.getFixedPosition(0);
+        List<Integer> blockingVehiclePositions = blockingVehiclesIdx.stream().map(puzzle::getFixedPosition).collect(Collectors.toList());
 
         int numberOfFreeFields = 0;
         int costsToEvade = 0;
 
-        for(int position = goalCarPosition + 1; position < puzzle.getGridSize(); position++){
-            if(blockingVehiclePositions.contains(position)) {
+        // set start position and iterator depending on front or back of vehicle should be considered
+        int startPosition = goalCarPosition + (front ? 1 : -1);
+        int iterator = front ? 1 : -1;
+
+        for (int position = startPosition; !isStoppingCriteriaFulfilled(position, front); position += iterator) {
+            // if a blocking vehicle is on the current position
+            if (blockingVehiclePositions.contains(position)) {
                 costsToEvade++;
-                alreadyConsideredVehicles.add(blockingVehiclesIdx.get(blockingVehiclePositions.indexOf(position)));
-
-            }
-
-            numberOfFreeFields++;
-
-            if(numberOfFreeFields >= puzzle.getCarSize(vehicleIdx))
-                return costsToEvade;
-
-        }
-        return Integer.MAX_VALUE;
-    }
-
-    private int expenseToEvadeBack(int vehicleIdx, List<Integer> blockingVehiclesIdx, Set<Integer> alreadyConsideredVehicles) {
-        int goalCarPosition = puzzle.getFixedPosition(0);
-        List<Integer> blockingVehiclePositions = blockingVehiclesIdx.stream().map(puzzle::getFixedPosition).collect(Collectors.toList());
-
-
-        int numberOfFreeFields = 0;
-        int costsToEvade = 0;
-
-        for(int position = goalCarPosition -1; position >= 0; position--){
-            if(blockingVehiclePositions.contains(position)) {
-                costsToEvade++;
+                // make sure that this already considered blocking vehicle is not considered again
                 alreadyConsideredVehicles.add(blockingVehiclesIdx.get(blockingVehiclePositions.indexOf(position)));
             }
 
             numberOfFreeFields++;
 
-            if(numberOfFreeFields >= puzzle.getCarSize(vehicleIdx))
+            if (numberOfFreeFields >= puzzle.getCarSize(vehicleIdx))
                 return costsToEvade;
 
         }
+
+        // blocking vehicle can't evade to selected side, because of its length
         return Integer.MAX_VALUE;
     }
+
+    private boolean isStoppingCriteriaFulfilled(int position, boolean front) {
+        return front ? position == puzzle.getGridSize() : position == -1;
+    }
+
 }

@@ -105,6 +105,7 @@ public class AStar {
     }
 
     private void addToOpenList(Node node, AtomicInteger insertionIdx) {
+        // cache heuristic for node state
         if (!heuristics.containsKey(node.getState()))
             heuristics.put(node.getState(), heuristic.getValue(node.getState()));
 
@@ -115,6 +116,7 @@ public class AStar {
             openListInsertions.put(node, insertionIdx.getAndIncrement());
             openList.add(node);
 
+            // if the new node has lower costs than the existing one, replace it
             if (existingNode != null && node.getDepth() < existingNode.getDepth()) {
                 openList.remove(existingNode);
                 openListInsertions.remove(existingNode);
