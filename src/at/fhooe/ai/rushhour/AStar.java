@@ -53,7 +53,8 @@ public class AStar {
 
         Node targetNode = search();
 
-        if (targetNode == null) return;
+        if (targetNode == null)
+            return;
 
         List<State> convertedPath = convertPath(new ArrayList<>(), targetNode);
 
@@ -69,6 +70,7 @@ public class AStar {
             return path;
         }
     }
+
 
     private Node search() {
         heuristics.clear();
@@ -92,8 +94,7 @@ public class AStar {
 
             if (!closedList.contains(currentNode.getState())) {
                 for (Node child : currentNode.expand()) {
-                    openListInsertions.put(child, LocalDateTime.now());
-                    openList.add(child);
+                    addToOpenList(child, insertionIdx);
                 }
             }
 
