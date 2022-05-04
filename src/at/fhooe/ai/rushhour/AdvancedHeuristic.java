@@ -62,7 +62,6 @@ public class AdvancedHeuristic implements Heuristic {
         int goalCarPosition = puzzle.getFixedPosition(0);
         List<Integer> blockingVehiclePositions = blockingVehiclesIdx.stream().map(puzzle::getFixedPosition).collect(Collectors.toList());
 
-        int numberOfFreeFields = 0;
         int costsToEvade = 0;
 
         // set start position and iterator depending on front or back of vehicle should be considered
@@ -77,10 +76,9 @@ public class AdvancedHeuristic implements Heuristic {
                 alreadyConsideredVehicles.add(blockingVehiclesIdx.get(blockingVehiclePositions.indexOf(position)));
             }
 
-            numberOfFreeFields++;
-
-            if (numberOfFreeFields >= puzzle.getCarSize(vehicleIdx))
+            if(Math.abs(goalCarPosition - position) >= puzzle.getCarSize(vehicleIdx))
                 return costsToEvade;
+
 
         }
 
