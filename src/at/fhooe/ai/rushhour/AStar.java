@@ -86,8 +86,6 @@ public class AStar {
         while (!openList.isEmpty()) {
             Node currentNode = openList.poll();
 
-            openList.remove(currentNode);
-
             if (currentNode.getState().isGoal()) {
                 return currentNode;
             }
@@ -96,9 +94,9 @@ public class AStar {
                 for (Node child : currentNode.expand()) {
                     addToOpenList(child, insertionIdx);
                 }
+            }else{
+                closedList.add(currentNode.getState());
             }
-
-            closedList.add(currentNode.getState());
         }
 
         return null;
