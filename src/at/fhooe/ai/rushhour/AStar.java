@@ -94,7 +94,7 @@ public class AStar {
                 for (Node child : currentNode.expand()) {
                     addToOpenList(child, insertionIdx);
                 }
-            }else{
+            } else {
                 closedList.add(currentNode.getState());
             }
         }
